@@ -1,10 +1,7 @@
-from easygui import *
 import toml
 import psycopg2
-import psycopg2.sql as sql
 import tkinter as tk
 from tkinter import ttk
-from tkinter import *
 from PIL import Image, ImageTk
 import PIL
 import PIL.Image
@@ -62,7 +59,7 @@ def add_agent():
     cur.execute(SQL, DATA) # type: ignore
     cur.close()
     con.commit()
-    msgbox(title = 'Agent added!', msg = f'Successfully added agent!')
+    easygui.msgbox(title = 'Agent added!', msg = f'Successfully added agent!')
     update_data()
 
 def update_data():
@@ -109,7 +106,7 @@ def sort_treeview(tree, col, descending):
 def search():
     OpenState.SELECTED_ROW = 0
     OpenState.data = []
-    search_text = enterbox(title = 'Search', msg = 'Enter search criteria (partial matches will be returned too):', default = '')
+    search_text = easygui.enterbox(title = 'Search', msg = 'Enter search criteria (partial matches will be returned too):', default = '')
     if search_text != None and "jaiba" not in search_text.lower():
         search_text = '%' + search_text + '%'
         for item in OpenState.table.get_children():
@@ -147,10 +144,10 @@ def search():
 
 def toggle_agent():
     if OpenState.SELECTED_ROW == 0:
-        msgbox(title = 'No agent Selected', 
+        easygui.msgbox(title = 'No agent Selected', 
                msg = 'You need to select an agent!') 
     else:
-        con = psycopg2.connect(database="floormap", user="postgres", password="postgres", host = "10.200.23.11")
+        con = psycopg2.connect(CONNECT_STR)
         cur = con.cursor()
         cur.execute(f"SELECT active FROM agents WHERE id = {OpenState.SELECTED_ROW};")
         result = cur.fetchone()
@@ -169,7 +166,7 @@ def toggle_agent():
 
 def update_status(event = None):
     if OpenState.SELECTED_ROW == 0:
-        msgbox(title = 'No agent Selected', 
+        easygui.msgbox(title = 'No agent Selected', 
                msg = 'You need to select an agent!')    
     else:
         choice = easygui.choicebox(title = "Update", 
@@ -310,12 +307,12 @@ def la_jaiba():
         canvas.moveto(img_item, 0, 0)
         canvas.image = resized # type: ignore
     
-    map= Toplevel()
+    map= tk.Toplevel()
     map.resizable(True, True)
     map.title('LA JAIBA!')
     img = PIL.Image.open(JAIBA)
     photo = PIL.ImageTk.PhotoImage(img)
-    canvas= Canvas(map, width = 225, height = 225) 
+    canvas= tk.Canvas(map, width = 225, height = 225) 
     img_item = canvas.create_image(0, 0, image = photo)
     canvas.bind('<Configure>', resize_event)
     canvas.pack(expand=True, fill='both')
@@ -329,19 +326,19 @@ def display_map():
         canvas.moveto(img_item, 0, 0)
         canvas.image = resized # type: ignore
     
-    map= Toplevel()
+    map= tk.Toplevel()
     map.resizable(True, True)
     map.title('Floor Map')
     img = PIL.Image.open(floorplan)
     photo = PIL.ImageTk.PhotoImage(img)
-    canvas= Canvas(map, width = 1600, height = 900) 
+    canvas= tk.Canvas(map, width = 1600, height = 900) 
     img_item = canvas.create_image(0, 0, image = photo)
     canvas.bind('<Configure>', resize_event)
     canvas.pack(expand=True, fill='both')
     map.mainloop()
 
 def generate_report():    
-    output = filesavebox(title = 'Select filename and location to save report',
+    output = easygui.filesavebox(title = 'Select filename and location to save report',
                           default='report.csv', 
                           filetypes = '*.csv')
 
@@ -386,38 +383,38 @@ def create_window(): #assemble the actual window and buttons the user interacts 
 
     # Actual Buttons
    
-    map_display = ttk.Button(OpenState.button_frame, text="Open Map", command=display_map)
-    map_display.pack(padx = 5, pady = 5)
+    map_display_button = ttk.Button(OpenState.button_frame, text="Open Map", command=display_map)
+    map_display_button.pack(padx = 5, pady = 5)
 
-    show_row = ttk.Button(OpenState.button_frame, text="Search", command=search)
-    show_row.pack(padx = 5, pady = 5)
+    search_button = ttk.Button(OpenState.button_frame, text="Search", command=search)
+    search_button.pack(padx = 5, pady = 5)
 
     refresh_button = ttk.Button(OpenState.button_frame, text="Refresh", command=update_data)
     refresh_button.pack(padx = 5, pady = 5)
 
-    add_button = ttk.Button(OpenState.button_frame, text="Add Agent", command=add_agent)
-    add_button.pack(padx = 5, pady = 5)
+    add_agent_button = ttk.Button(OpenState.button_frame, text="Add Agent", command=add_agent)
+    add_agent_button.pack(padx = 5, pady = 5)
 
-    add_button = ttk.Button(OpenState.button_frame, text="Toggle Agent Active Status", command=toggle_agent)
-    add_button.pack(padx = 5, pady = 5)
+    toggle_button = ttk.Button(OpenState.button_frame, text="Toggle Agent Active Status", command=toggle_agent)
+    toggle_button.pack(padx = 5, pady = 5)
 
-    view_open_tickets = ttk.Button(OpenState.button_frame, text = 'Show Active Agents', command = set_open_true)
-    view_open_tickets.pack(padx = 5, pady = 5)
+    view_active_agents_button = ttk.Button(OpenState.button_frame, text = 'Show Active Agents', command = set_open_true)
+    view_active_agents_button.pack(padx = 5, pady = 5)
 
-    view_closed_tickets = ttk.Button(OpenState.button_frame, text = 'Show Inactive Agents', command = set_open_false)
-    view_closed_tickets.pack(padx = 5, pady = 5)
+    view_inactive_agents_button = ttk.Button(OpenState.button_frame, text = 'Show Inactive Agents', command = set_open_false)
+    view_inactive_agents_button.pack(padx = 5, pady = 5)
 
-    view_all_tickets = ttk.Button(OpenState.button_frame, text = 'Show All Agents', command = set_all)
-    view_all_tickets.pack(padx = 5, pady = 5)
+    view_all_agents_button = ttk.Button(OpenState.button_frame, text = 'Show All Agents', command = set_all)
+    view_all_agents_button.pack(padx = 5, pady = 5)
 
-    close_selected_ticket = ttk.Button(OpenState.button_frame, text = 'Update Agent', command = update_status) #update agent status
-    close_selected_ticket.pack(padx = 5, pady = 5) 
+    update_selected_agent_button = ttk.Button(OpenState.button_frame, text = 'Update Agent', command = update_status)
+    update_selected_agent_button.pack(padx = 5, pady = 5) 
 
-    report = ttk.Button(OpenState.button_frame, text = 'Generate Report of Current View', command = generate_report)
-    report.pack(padx = 5, pady = 5)
+    report_button = ttk.Button(OpenState.button_frame, text = 'Generate Report of Current View', command = generate_report)
+    report_button.pack(padx = 5, pady = 5)
 
     # Load DHR logo
-    OpenState.image = Image.open("dhr-logo.jpg") # DHR logo
+    OpenState.image = Image.open("dhr-logo.jpg")
     resized_image = OpenState.image.resize((400, 110))
     photo = ImageTk.PhotoImage(resized_image)
     OpenState.image_label = tk.Label(OpenState.main_frame, image=photo)
@@ -428,7 +425,7 @@ def create_window(): #assemble the actual window and buttons the user interacts 
     refresh_data(OpenState.table, OpenState.data, OpenState.OPEN)
 
     OpenState.table.bind("<ButtonRelease-1>", select_row)  # Call select_row on mouse click
-    OpenState.table.bind("<ButtonRelease-3>", update_status)
+    OpenState.table.bind("<ButtonRelease-3>", update_status) # Calls update_status on right click if an agent is selected
     OpenState.table.pack()
 
 create_window()
