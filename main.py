@@ -15,9 +15,9 @@ CONNECT_STR: str = f'host = {CONFIG['credentials']['host']} dbname = {CONFIG['cr
 
 class OpenState: # Avoids using global variables
     OPEN: any = True # type: ignore # Keeps track of whether you're looking at open, closed, or all tickets
-    SELECTED_ROW: int = 0 # I shouldn't need to explain this. 
+    SELECTED_ROW: int = 0  
     data: list = [] # list that holds the data the table / treeview is comprised of
-    view_cols: list[str] = [ 'id', 'agent', 'clinic', 'seat', "extension", 'active', 'last_update', 'status', 'remarks'] # default view
+    view_cols: list[str] = ['id', 'agent', 'clinic', 'seat', "extension", 'active', 'last_update', 'status', 'remarks'] # default view, currently no way to change this like in the ticket manager
     root: any = None # type: ignore # main window object
     table: any # type: ignore # main table that shows data
     scrollbar: any # type: ignore # vertical scrollbar
@@ -49,8 +49,9 @@ def select_row(event):
         OpenState.SELECTED_ROW = 0
     
 def add_agent():
-    new_agent = easygui.multenterbox(msg = "Enter new agent details.", title = "Add Agent", fields = ["Name", "Clinic", "Extension", "Seat", "Status", "Remarks"])
-    print(new_agent)
+    new_agent = easygui.multenterbox(msg = "Enter new agent details.", 
+                                     title = "Add Agent", 
+                                     fields = ["Name", "Clinic", "Extension", "Seat", "Status", "Remarks"])
     con = psycopg2.connect(CONNECT_STR)
     cur = con.cursor()
     SQL = 'INSERT INTO agents (agent, clinic, extension, seat, status, remarks) VALUES (%s, %s, %s, %s, %s, %s)'
@@ -151,7 +152,6 @@ def toggle_agent():
         cur = con.cursor()
         cur.execute(f"SELECT active FROM agents WHERE id = {OpenState.SELECTED_ROW};")
         result = cur.fetchone()
-        print(result)
         if result[0] == True: # type: ignore
             new_state = False
         if result[0] == False: # type: ignore
@@ -301,7 +301,7 @@ def update_status(event = None):
 
 def la_jaiba():
     
-    def resize_event(event): #even though the window is not resizable by the user, this handles arranging the PNG properly inside the window when it's created
+    def resize_event(event): 
         resized = PIL.ImageTk.PhotoImage(img.resize((event.width, event.height)))
         canvas.itemconfig(img_item, image=resized)
         canvas.moveto(img_item, 0, 0)
@@ -320,7 +320,7 @@ def la_jaiba():
 
 def display_map():
     floorplan: str = 'Python Plan.png'
-    def resize_event(event): #even though the window is not resizable by the user, this handles arranging the PNG properly inside the window when it's created
+    def resize_event(event):
         resized = PIL.ImageTk.PhotoImage(img.resize((event.width, event.height)))
         canvas.itemconfig(img_item, image=resized)
         canvas.moveto(img_item, 0, 0)
@@ -424,6 +424,7 @@ def create_window(): #assemble the actual window and buttons the user interacts 
     # Initial table population
     refresh_data(OpenState.table, OpenState.data, OpenState.OPEN)
 
+    # Mouse button bindings (bound to the table)
     OpenState.table.bind("<ButtonRelease-1>", select_row)  # Call select_row on mouse click
     OpenState.table.bind("<ButtonRelease-3>", update_status) # Calls update_status on right click if an agent is selected
     OpenState.table.pack()
