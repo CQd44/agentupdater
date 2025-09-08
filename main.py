@@ -55,8 +55,7 @@ def add_agent():
     con = psycopg2.connect(CONNECT_STR)
     cur = con.cursor()
     SQL = 'INSERT INTO agents (agent, clinic, extension, seat, status, remarks) VALUES (%s, %s, %s, %s, %s, %s)'
-    DATA = (new_agent) # type: ignore
-    print(DATA)
+    DATA = (new_agent, ) # type: ignore
     cur.execute(SQL, DATA) # type: ignore
     cur.close()
     con.commit()
@@ -430,4 +429,5 @@ def create_window(): #assemble the actual window and buttons the user interacts 
     OpenState.table.pack()
 
 create_window()
+
 OpenState.root.mainloop()
