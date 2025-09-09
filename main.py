@@ -54,9 +54,9 @@ def add_agent():
                                      fields = ["Name", "Clinic", "Extension", "Seat", "Status", "Remarks"])
     con = psycopg2.connect(CONNECT_STR)
     cur = con.cursor()
-    SQL = 'INSERT INTO agents (agent, clinic, extension, seat, status, remarks) VALUES (%s, %s, %s, %s, %s, %s)'
-    DATA = (new_agent, ) # type: ignore
-    cur.execute(SQL, DATA) # type: ignore
+    query = 'INSERT INTO agents (agent, clinic, extension, seat, status, remarks) VALUES (%s, %s, %s, %s, %s, %s)'
+    DATA = tuple(new_agent[i] for i in range(len(new_agent))) # type: ignore
+    cur.execute(query, DATA) # type: ignore
     cur.close()
     con.commit()
     easygui.msgbox(title = 'Agent added!', msg = f'Successfully added agent!')
@@ -429,5 +429,4 @@ def create_window(): #assemble the actual window and buttons the user interacts 
     OpenState.table.pack()
 
 create_window()
-
 OpenState.root.mainloop()
