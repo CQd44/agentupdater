@@ -14,7 +14,7 @@ JAIBA = "la jaiba.png"
 CONNECT_STR: str = f'host = {CONFIG['credentials']['host']} dbname = {CONFIG['credentials']['dbname']} user = {CONFIG['credentials']['username']} password = {CONFIG['credentials']['password']}'
 
 class OpenState: # Avoids using global variables
-    OPEN: any = True # type: ignore # Keeps track of whether you're looking at open, closed, or all tickets
+    OPEN: any = True # type: ignore # Keeps track of whether you're looking at active, inactive, or all agents
     SELECTED_ROW: int = 0  
     data: list = [] # list that holds the data the table / treeview is comprised of
     view_cols: list[str] = ['id', 'agent', 'clinic', 'seat', "extension", 'active', 'last_update', 'status', 'remarks'] # default view, currently no way to change this like in the ticket manager
@@ -48,21 +48,26 @@ def select_row(event):
     except:
         OpenState.SELECTED_ROW = 0
     
-def add_agent():
-    new_agent = easygui.multenterbox(msg = "Enter new agent details.", 
+def add_agent(event = None):
+    new_agent: list[str] = easygui.multenterbox(msg = "Enter new agent details.", 
                                      title = "Add Agent", 
-                                     fields = ["Name", "Clinic", "Extension", "Seat", "Status", "Remarks"])
+                                     fields = ["Name", "Clinic", "Extension", "Seat", "Status", "Remarks"]) # type: ignore
     con = psycopg2.connect(CONNECT_STR)
     cur = con.cursor()
-    query = 'INSERT INTO agents (agent, clinic, extension, seat, status, remarks) VALUES (%s, %s, %s, %s, %s, %s)'
-    DATA = tuple(new_agent[i] for i in range(len(new_agent))) # type: ignore
-    cur.execute(query, DATA) # type: ignore
-    cur.close()
-    con.commit()
-    easygui.msgbox(title = 'Agent added!', msg = f'Successfully added agent!')
-    update_data()
+    query = 'INSERT INTO agents (agent, clinic, extension, seat, status, remarks) VALUES (%s, %s, %s, %s, %s, %s);'
+    
+    if new_agent != None:
+        DATA = tuple(new_agent[i] for i in range(len(new_agent))) # type: ignore
+        cur.execute(query, DATA) # type: ignore
+        cur.close()
+        con.commit()
+        easygui.msgbox(title = 'Agent added!', msg = f'Successfully added agent!')
+        update_data()
+    else:
+        print("THIS SHOULD NOT PRINT WHEN AN AGENT IS ADDED")
+        pass
 
-def update_data():
+def update_data(event = None):
     OpenState.data = [] #if you don't reinitialize this it just adds duplicate entries every time
     refresh_data(OpenState.table, OpenState.data, OpenState.OPEN)
 
@@ -103,46 +108,47 @@ def sort_treeview(tree, col, descending):
         tree.move(item, '', index)
     OpenState.table.heading(col, command = lambda: sort_treeview(tree, col, not descending))
 
-def search():
+def search(event = None):
     OpenState.SELECTED_ROW = 0
     OpenState.data = []
     search_text = easygui.enterbox(title = 'Search', msg = 'Enter search criteria (partial matches will be returned too):', default = '')
-    if search_text != None and "jaiba" not in search_text.lower():
-        search_text = '%' + search_text + '%'
-        for item in OpenState.table.get_children():
-            OpenState.table.delete(item)
-        con = psycopg2.connect(CONNECT_STR)
-        cur = con.cursor()
-        DATA = (search_text, search_text, search_text, search_text) #clumsy but works
-        cur.execute("""SELECT * FROM agents WHERE 
-                    (UPPER(agent) LIKE UPPER(%s) OR
-                    UPPER(clinic) LIKE UPPER(%s) OR
-                    UPPER(seat) LIKE UPPER(%s) OR
-                    UPPER(remarks) LIKE UPPER(%s))
-                    ORDER BY id ASC;""", DATA)
-        rows = cur.fetchall()
+    if search_text != None:
+        if "jaiba" not in search_text.lower():
+            search_text = '%' + search_text + '%'
+            for item in OpenState.table.get_children():
+                OpenState.table.delete(item)
+            con = psycopg2.connect(CONNECT_STR)
+            cur = con.cursor()
+            DATA = (search_text, search_text, search_text, search_text) #clumsy but works
+            cur.execute("""SELECT * FROM agents WHERE 
+                        (UPPER(agent) LIKE UPPER(%s) OR
+                        UPPER(clinic) LIKE UPPER(%s) OR
+                        UPPER(seat) LIKE UPPER(%s) OR
+                        UPPER(remarks) LIKE UPPER(%s))
+                        ORDER BY id ASC;""", DATA)
+            rows = cur.fetchall()
 
-        cur.close()
-        con.close()
+            cur.close()
+            con.close()
 
-        for row in rows:
-            subresult = []
-            for i in range(len(OpenState.view_cols)):
-                if row[i] == None:
-                    subresult.append("None") # type: ignore
-                    
-                else:
-                    subresult.append(row[i])
-            OpenState.data.append(subresult)
+            for row in rows:
+                subresult = []
+                for i in range(len(OpenState.view_cols)):
+                    if row[i] == None:
+                        subresult.append("None") # type: ignore
+                        
+                    else:
+                        subresult.append(row[i])
+                OpenState.data.append(subresult)
 
-        for row in OpenState.data:
-            OpenState.table.insert("", tk.END, values=row)
-    elif "jaiba" in search_text.lower():
-        la_jaiba()
+            for row in OpenState.data:
+                OpenState.table.insert("", tk.END, values=row)
+        elif "jaiba" in search_text.lower():
+            la_jaiba()
     else:
         pass
 
-def toggle_agent():
+def toggle_agent(event = None):
     if OpenState.SELECTED_ROW == 0:
         easygui.msgbox(title = 'No agent Selected', 
                msg = 'You need to select an agent!') 
@@ -298,7 +304,7 @@ def update_status(event = None):
                 else:
                     easygui.msgbox(title = "Update cancelled", msg = "Status update cancelled.")
 
-def la_jaiba():
+def la_jaiba(event = None):
     
     def resize_event(event): 
         resized = PIL.ImageTk.PhotoImage(img.resize((event.width, event.height)))
@@ -317,7 +323,7 @@ def la_jaiba():
     canvas.pack(expand=True, fill='both')
     map.mainloop()
 
-def display_map():
+def display_map(event = None):
     floorplan: str = 'Python Plan.png'
     def resize_event(event):
         resized = PIL.ImageTk.PhotoImage(img.resize((event.width, event.height)))
@@ -336,16 +342,16 @@ def display_map():
     canvas.pack(expand=True, fill='both')
     map.mainloop()
 
-def generate_report():    
+def generate_report(event = None):    
     output = easygui.filesavebox(title = 'Select filename and location to save report',
                           default='report.csv', 
                           filetypes = '*.csv')
-
-    with open(output, 'w', newline = '') as report: # type: ignore
-        writer = csv.writer(report)
-        writer.writerow(OpenState.view_cols)
-        for row in OpenState.data:
-            writer.writerow(row)
+    if output:
+        with open(output, 'w', newline = '') as report: # type: ignore
+            writer = csv.writer(report)
+            writer.writerow(OpenState.view_cols)
+            for row in OpenState.data:
+                writer.writerow(row)
 
 def create_window(): #assemble the actual window and buttons the user interacts with
     if not OpenState.root:
@@ -382,19 +388,19 @@ def create_window(): #assemble the actual window and buttons the user interacts 
 
     # Actual Buttons
    
-    map_display_button = ttk.Button(OpenState.button_frame, text="Open Map", command=display_map)
+    map_display_button = ttk.Button(OpenState.button_frame, text="Open Map", underline = 0, command=display_map)
     map_display_button.pack(padx = 5, pady = 5)
 
-    search_button = ttk.Button(OpenState.button_frame, text="Search", command=search)
+    search_button = ttk.Button(OpenState.button_frame, text="Search", underline = 0, command=search)
     search_button.pack(padx = 5, pady = 5)
 
-    refresh_button = ttk.Button(OpenState.button_frame, text="Refresh", command=update_data)
+    refresh_button = ttk.Button(OpenState.button_frame, text="Refresh", underline = 0, command=update_data)
     refresh_button.pack(padx = 5, pady = 5)
 
-    add_agent_button = ttk.Button(OpenState.button_frame, text="Add Agent", command=add_agent)
+    add_agent_button = ttk.Button(OpenState.button_frame, text="Add Agent", underline = 0, command=add_agent)
     add_agent_button.pack(padx = 5, pady = 5)
 
-    toggle_button = ttk.Button(OpenState.button_frame, text="Toggle Agent Active Status", command=toggle_agent)
+    toggle_button = ttk.Button(OpenState.button_frame, text="Toggle Agent Active Status", underline = 0, command=toggle_agent)
     toggle_button.pack(padx = 5, pady = 5)
 
     view_active_agents_button = ttk.Button(OpenState.button_frame, text = 'Show Active Agents', command = set_open_true)
@@ -406,10 +412,10 @@ def create_window(): #assemble the actual window and buttons the user interacts 
     view_all_agents_button = ttk.Button(OpenState.button_frame, text = 'Show All Agents', command = set_all)
     view_all_agents_button.pack(padx = 5, pady = 5)
 
-    update_selected_agent_button = ttk.Button(OpenState.button_frame, text = 'Update Agent', command = update_status)
+    update_selected_agent_button = ttk.Button(OpenState.button_frame, text = 'Update Agent', underline = 0, command = update_status)
     update_selected_agent_button.pack(padx = 5, pady = 5) 
 
-    report_button = ttk.Button(OpenState.button_frame, text = 'Generate Report of Current View', command = generate_report)
+    report_button = ttk.Button(OpenState.button_frame, text = 'Generate Report of Current View', underline = 0, command = generate_report)
     report_button.pack(padx = 5, pady = 5)
 
     # Load DHR logo
@@ -423,10 +429,29 @@ def create_window(): #assemble the actual window and buttons the user interacts 
     # Initial table population
     refresh_data(OpenState.table, OpenState.data, OpenState.OPEN)
 
-    # Mouse button bindings (bound to the table)
+    # Mouse button bindings
     OpenState.table.bind("<ButtonRelease-1>", select_row)  # Call select_row on mouse click
+    OpenState.table.bind("<Double-Button-1>", update_status) # Calls update status on double click 
     OpenState.table.bind("<ButtonRelease-3>", update_status) # Calls update_status on right click if an agent is selected
-    OpenState.table.pack()
+   # OpenState.table.pack()
+
+    # Keyboard bindings
+    OpenState.table.bind("u", update_status)
+    OpenState.table.bind("t", toggle_agent)
+    OpenState.root.bind("a", add_agent)
+    OpenState.root.bind("o", display_map)
+    OpenState.root.bind("g", generate_report)
+    OpenState.root.bind("r", update_data)
+    OpenState.root.bind("s", search)
+    OpenState.table.bind("U", update_status)
+    OpenState.table.bind("T", toggle_agent)
+    OpenState.root.bind("A", add_agent)
+    OpenState.root.bind("O", display_map)
+    OpenState.root.bind("G", generate_report)
+    OpenState.root.bind("R", update_data)
+    OpenState.root.bind("S", search)
+    OpenState.root.bind("CEVICHE", la_jaiba)
+    OpenState.root.bind("ceviche", la_jaiba)
 
 create_window()
 OpenState.root.mainloop()
