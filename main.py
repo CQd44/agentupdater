@@ -27,6 +27,28 @@ class OpenState: # Avoids using global variables
     image = Image.open("dhr-logo.jpg") # the actual logo
     image_label: any # type: ignore # where the logo goes
 
+def create_table():
+    con = psycopg2.connect(CONNECT_STR)
+    cur = con.cursor()    
+    query = """CREATE TABLE IF NOT EXISTS agents ( 
+            id SERIAL, 
+            agent TEXT NOT NULL,
+            clinic TEXT NOT NULL,
+            seat TEXT DEFAULT 'PENDING',
+            extension TEXT DEFAULT 'PENDING',
+            active BOOL DEFAULT TRUE,
+            last_update DATE DEFAULT NOW(),
+            status TEXT DEFAULT NULL,
+            remarks TEXT DEFAULT NULL
+            );                
+    """
+    try:
+        cur.execute(query)
+        cur.close()
+        con.commit()
+    except Exception as e:
+        print("Error:", e)
+
 def set_open_true():
     OpenState.OPEN = True
     update_data()
@@ -455,5 +477,6 @@ def create_window(): #assemble the actual window and buttons the user interacts 
     OpenState.root.bind("CEVICHE", la_jaiba)
     OpenState.root.bind("ceviche", la_jaiba)
 
+create_table()
 create_window()
 OpenState.root.mainloop()
