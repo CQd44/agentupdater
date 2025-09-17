@@ -64,7 +64,6 @@ def add_agent(event = None):
         easygui.msgbox(title = 'Agent added!', msg = f'Successfully added agent!')
         update_data()
     else:
-        print("THIS SHOULD NOT PRINT WHEN AN AGENT IS ADDED")
         pass
 
 def update_data(event = None):
@@ -79,7 +78,7 @@ def refresh_data(table, data, open):
     cur = con.cursor()
     DATA = (open,)
     if open != 'ALL':
-        query = '''SELECT * FROM agents WHERE (agent != 'PENDING' AND active IS %s) ORDER BY 1 ASC;'''
+        query = "SELECT * FROM agents WHERE (agent != 'PENDING' AND active IS %s) ORDER BY 1 ASC;"
     else:
         query = "SELECT * FROM agents WHERE agent != 'PENDING' ORDER BY id ASC;"
     cur.execute(query, DATA)
@@ -119,12 +118,13 @@ def search(event = None):
                 OpenState.table.delete(item)
             con = psycopg2.connect(CONNECT_STR)
             cur = con.cursor()
-            DATA = (search_text, search_text, search_text, search_text) #clumsy but works
+            DATA = (search_text, search_text, search_text, search_text, search_text) #clumsy but works
             cur.execute("""SELECT * FROM agents WHERE 
                         (UPPER(agent) LIKE UPPER(%s) OR
                         UPPER(clinic) LIKE UPPER(%s) OR
                         UPPER(seat) LIKE UPPER(%s) OR
-                        UPPER(remarks) LIKE UPPER(%s))
+                        UPPER(remarks) LIKE UPPER(%s) OR
+                        UPPER(status) LIKE UPPER(%s))
                         ORDER BY id ASC;""", DATA)
             rows = cur.fetchall()
 
@@ -155,7 +155,9 @@ def toggle_agent(event = None):
     else:
         con = psycopg2.connect(CONNECT_STR)
         cur = con.cursor()
-        cur.execute(f"SELECT active FROM agents WHERE id = {OpenState.SELECTED_ROW};")
+        query = "SELECT active FROM agents WHERE id = %s;"
+        data = (OpenState.SELECTED_ROW, )
+        cur.execute(query, data)
         result = cur.fetchone()
         if result[0] == True: # type: ignore
             new_state = False
