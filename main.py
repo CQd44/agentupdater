@@ -181,10 +181,7 @@ def toggle_agent(event = None):
         data = (OpenState.SELECTED_ROW, )
         cur.execute(query, data)
         result = cur.fetchone()
-        if result[0] == True: # type: ignore
-            new_state = False
-        if result[0] == False: # type: ignore
-            new_state = True
+        new_state = not result[0] # type: ignore        
         data = (new_state, OpenState.SELECTED_ROW) # type: ignore
         query = "UPDATE agents SET active = %s WHERE id = %s;"
         cur.execute(query, data)
